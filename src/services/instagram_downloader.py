@@ -1,29 +1,19 @@
-import requests
-from bs4 import BeautifulSoup
+import yt_dlp
+import uuid
+import os
 
-def download_instagram_reel(url):
+def download_instagram_reel(url: str) -> str | None:
+    output_path = f"instagram_{uuid.uuid4().hex}.mp4"
+    ydl_opts = {
+        'outtmpl': output_path,
+        'format': 'mp4',
+        'quiet': True,
+        'noplaylist': True,
+    }
     try:
-        response = requests.get(url)
-        if response.status_code != 200:
-            return None
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        video_tag = soup.find('video')
-        
-        if video_tag and 'src' in video_tag.attrs:
-            video_url = video_tag['src']
-            return video_url
-        else:
-            return None
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        return output_path if os.path.exists(output_path) else None
     except Exception as e:
-        print(f"Error occurred: {e}")
-        return None
-
-def fetch_and_download_reel(url):
-    video_url = download_instagram_reel(url)
-    if video_url:
-        # Logic to download the video from video_url
-        # This can be implemented using requests or any other method
-        return video_url
-    else:
+        print(f"Ошибка скачивания видео из Instagram: {e}")
         return None

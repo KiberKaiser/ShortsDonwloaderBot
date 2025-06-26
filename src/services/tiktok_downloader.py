@@ -15,5 +15,5 @@ def download_tiktok_video(url: str) -> str | None:
             ydl.download([url])
         return output_path if os.path.exists(output_path) else None
     except Exception as e:
-        print(f"Error downloading TikTok video: {e}")
+        print(f"Ошибка скачивания видео из TikTok: {e}")
         return None
