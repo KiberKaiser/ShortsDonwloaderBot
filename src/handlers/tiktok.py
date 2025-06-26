@@ -1,5 +1,4 @@
 import os
-import re
 from aiogram import types
 from aiogram.types.input_file import FSInputFile
 from services.tiktok_downloader import download_tiktok_video
@@ -14,13 +13,11 @@ def validate_tiktok_url(url: str) -> bool:
 async def handle_tiktok_download(message: types.Message):
     url = message.text.strip()
     if validate_tiktok_url(url):
-        await message.answer("Downloading your TikTok video...")
+        await message.answer("Скачиваю видео из TikTok...")
         video_path = download_tiktok_video(url)
         if video_path:
             input_file = FSInputFile(video_path)
             await message.answer_video(video=input_file)
             os.remove(video_path)
         else:
-            await message.answer("Failed to download the video. Please try again.")
-    else:
-        await message.answer("Invalid TikTok URL. Please send a valid link.")
+            await message.answer("Не могу скачать видео. Попробуй ещё раз.")
