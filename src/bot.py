@@ -1,13 +1,18 @@
 import asyncio
+import os
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import CallbackQuery
+from aiogram.types.input_file import FSInputFile
 
-from keyboard.inlineButtons import get_main_reply_keyboard
-from handlers.tiktok import handle_tiktok_download, validate_tiktok_url
-from handlers.youtube_shorts import handle_youtube_shorts_download, validate_youtube_shorts_url
-from handlers.instagram_reels import handle_instagram_reels_download, validate_instagram_reels_url
+from keyboard.inlineButtons import get_main_reply_keyboard, get_format_choice_keyboard
+from handlers.tiktok import validate_tiktok_url
+from handlers.youtube_shorts import validate_youtube_shorts_url
+from handlers.instagram_reels import validate_instagram_reels_url
+from services.youtube_downloader import download_youtube_short_audio, download_youtube_short
+from services.tiktok_downloader import download_tiktok_audio, download_tiktok_video
+from services.instagram_downloader import download_instagram_reel_audio, download_instagram_reel
 
 TOKEN = ""  
 
@@ -47,15 +52,100 @@ async def universal_handler(message: types.Message):
     if not platform:
         await message.answer("Сначала выбери платформу:", reply_markup=get_main_reply_keyboard())
         return
-
+    
+    is_valid = False
     if platform == "tiktok" and validate_tiktok_url(url):
-        await handle_tiktok_download(message)
+        is_valid = True
     elif platform == "youtube" and validate_youtube_shorts_url(url):
-        await handle_youtube_shorts_download(message)
+        is_valid = True
     elif platform == "instagram" and validate_instagram_reels_url(url):
-        await handle_instagram_reels_download(message)
+        is_valid = True
+    
+    if is_valid:
+        await message.answer(
+            "Выбери формат для скачивания:",
+            reply_markup=get_format_choice_keyboard(url, platform)
+        )
     else:
         await message.answer("Пожалуйста, пришли корректную ссылку на видео.")
+
+@dp.callback_query(F.data.startswith(("video_", "audio_")))
+async def handle_format_choice(callback: CallbackQuery):
+    data_parts = callback.data.split("_", 2)
+    format_type = data_parts[0]  
+    platform = data_parts[1]     
+    url = data_parts[2]          
+    
+    await callback.answer()
+    
+    if format_type == "video":
+        if platform == "tiktok":
+            await callback.message.answer("Скачиваю видео из TikTok...")
+            from services.tiktok_downloader import download_tiktok_video
+            video_path = download_tiktok_video(url)
+            if video_path:
+                input_file = FSInputFile(video_path)
+                await callback.message.answer_video(video=input_file)
+                os.remove(video_path)
+            else:
+                await callback.message.answer("Не могу скачать видео. Попробуй ещё раз.")
+        
+        elif platform == "youtube":
+            await callback.message.answer("Скачиваю видео из Youtube Shorts...")
+            from services.youtube_downloader import download_youtube_short
+            import uuid
+            video_path = f"youtube_{uuid.uuid4().hex}.mp4"
+            result_path = download_youtube_short(url, video_path)
+            if result_path and os.path.getsize(result_path) > 0:
+                input_file = FSInputFile(result_path)
+                await callback.message.answer_video(video=input_file)
+                os.remove(result_path)
+            else:
+                await callback.message.answer("Не могу скачать видео. Попробуй ещё раз.")
+                if result_path and os.path.exists(result_path):
+                    os.remove(result_path)
+        
+        elif platform == "instagram":
+            await callback.message.answer("Скачиваю видео из Instagram...")
+            from services.instagram_downloader import download_instagram_reel
+            video_path = download_instagram_reel(url)
+            if video_path:
+                input_file = FSInputFile(video_path)
+                await callback.message.answer_video(video=input_file)
+                os.remove(video_path)
+            else:
+                await callback.message.answer("Не могу скачать видео. Попробуй ещё раз.")
+    
+    elif format_type == "audio":
+        if platform == "tiktok":
+            await callback.message.answer("Скачиваю аудио из TikTok...")
+            audio_path = download_tiktok_audio(url)
+            if audio_path:
+                input_file = FSInputFile(audio_path)
+                await callback.message.answer_audio(audio=input_file)
+                os.remove(audio_path)
+            else:
+                await callback.message.answer("Не могу скачать аудио. Попробуй ещё раз.")
+        
+        elif platform == "youtube":
+            await callback.message.answer("Скачиваю аудио из Youtube Shorts...")
+            audio_path = download_youtube_short_audio(url)
+            if audio_path:
+                input_file = FSInputFile(audio_path)
+                await callback.message.answer_audio(audio=input_file)
+                os.remove(audio_path)
+            else:
+                await callback.message.answer("Не могу скачать аудио. Попробуй ещё раз.")
+        
+        elif platform == "instagram":
+            await callback.message.answer("Скачиваю аудио из Instagram...")
+            audio_path = download_instagram_reel_audio(url)
+            if audio_path:
+                input_file = FSInputFile(audio_path)
+                await callback.message.answer_audio(audio=input_file)
+                os.remove(audio_path)
+            else:
+                await callback.message.answer("Не могу скачать аудио. Попробуй ещё раз.")
 
 async def main():
     await dp.start_polling(bot)
