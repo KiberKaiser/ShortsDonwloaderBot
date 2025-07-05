@@ -10,9 +10,9 @@ from keyboard.inlineButtons import get_main_reply_keyboard, get_format_choice_ke
 from handlers.tiktok import validate_tiktok_url
 from handlers.youtube_shorts import validate_youtube_shorts_url
 from handlers.instagram_reels import validate_instagram_reels_url
-from services.youtube_downloader import download_youtube_short_audio, download_youtube_short
-from services.tiktok_downloader import download_tiktok_audio, download_tiktok_video
-from services.instagram_downloader import download_instagram_reel_audio, download_instagram_reel
+from services.youtube_downloader import download_youtube_short_audio
+from services.tiktok_downloader import download_tiktok_audio
+from services.instagram_downloader import download_instagram_reel_audio
 
 TOKEN = ""  
 
