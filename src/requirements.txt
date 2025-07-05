@@ -1,4 +1,0 @@
-aiogram==3.20.0.post0
-yt-dlp==2025.6.9
-aiohttp==3.11.18
-aiofiles==24.1.0
