@@ -10,9 +10,6 @@ from keyboard.inlineButtons import get_main_reply_keyboard, get_format_choice_ke
 from handlers.tiktok import validate_tiktok_url
 from handlers.youtube_shorts import validate_youtube_shorts_url
 from handlers.instagram_reels import validate_instagram_reels_url
-from services.youtube_downloader import download_youtube_short_audio
-from services.tiktok_downloader import download_tiktok_audio
-from services.instagram_downloader import download_instagram_reel_audio
 
 TOKEN = ""  
 
@@ -119,6 +116,7 @@ async def handle_format_choice(callback: CallbackQuery):
     elif format_type == "audio":
         if platform == "tiktok":
             await callback.message.answer("Скачиваю аудио из TikTok...")
+            from services.tiktok_downloader import download_tiktok_audio
             audio_path = download_tiktok_audio(url)
             if audio_path:
                 input_file = FSInputFile(audio_path)
@@ -129,6 +127,7 @@ async def handle_format_choice(callback: CallbackQuery):
         
         elif platform == "youtube":
             await callback.message.answer("Скачиваю аудио из Youtube Shorts...")
+            from services.youtube_downloader import download_youtube_short_audio
             audio_path = download_youtube_short_audio(url)
             if audio_path:
                 input_file = FSInputFile(audio_path)
@@ -139,6 +138,7 @@ async def handle_format_choice(callback: CallbackQuery):
         
         elif platform == "instagram":
             await callback.message.answer("Скачиваю аудио из Instagram...")
+            from services.instagram_downloader import download_instagram_reel_audio
             audio_path = download_instagram_reel_audio(url)
             if audio_path:
                 input_file = FSInputFile(audio_path)
