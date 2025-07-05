@@ -11,7 +11,10 @@ from handlers.tiktok import validate_tiktok_url
 from handlers.youtube_shorts import validate_youtube_shorts_url
 from handlers.instagram_reels import validate_instagram_reels_url
 
-TOKEN = ""  
+TOKEN = os.getenv("BOT_TOKEN")
+
+if not TOKEN:
+    raise ValueError("BOT_TOKEN environment variable is not set!")
 
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
