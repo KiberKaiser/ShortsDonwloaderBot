@@ -4,9 +4,7 @@ from aiogram.types.input_file import FSInputFile
 from services.pinterest_downloader import download_pinterest_video
 
 def validate_pinterest_url(url: str) -> bool:
-    return (
-        url.startswith("https://www.pinterest.com/", "https://pin.it/") 
-    )
+   return url.startswith("https://www.pinterest.com/") or url.startswith("https://pin.it/")
 
 async def handle_pinterest_download(message: types.Message):
     url = message.text.strip()
