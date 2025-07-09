@@ -8,7 +8,7 @@ def download_pinterest_video(url: str, output_path: str = None) -> str | None:
     
     ydl_opts = {
         'outtmpl': output_path,
-        'format': 'best[height<=720]/best[height<=1080]/best',
+        'format': 'best',
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
