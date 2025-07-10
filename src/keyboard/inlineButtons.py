@@ -7,7 +7,6 @@ def get_main_reply_keyboard():
                 KeyboardButton(text="TikTok"),
                 KeyboardButton(text="YouTube Shorts"),
                 KeyboardButton(text="Instagram Reels"),
-                KeyboardButton(text="Pinterest"),
                 KeyboardButton(text="X (Twitter)")
             ]
         ],
