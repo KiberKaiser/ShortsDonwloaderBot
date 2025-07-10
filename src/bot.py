@@ -126,8 +126,13 @@ async def handle_format_choice(callback: CallbackQuery):
 
         elif platform == "pinterest":
             await callback.message.answer("Скачиваю видео из Pinterest...")
-            from services.pinterest_downloader import download_pinterest_video
-            video_path = download_pinterest_video(url)
+            from services.pinterest_downloader import download_pinterest_separate_and_merge, download_pinterest_video
+            
+            video_path = download_pinterest_separate_and_merge(url)
+            
+            if not video_path:
+                video_path = download_pinterest_video(url)
+            
             if video_path:
                 input_file = FSInputFile(video_path)
                 await callback.message.answer_video(video=input_file)
