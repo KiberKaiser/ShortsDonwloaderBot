@@ -7,7 +7,18 @@ import shutil
 
 def get_ffmpeg_path():
     if shutil.which('ffmpeg'):
-        return 'ffmpeg'
+        return shutil.which('ffmpeg')
+    
+   
+    heroku_paths = [
+        '/usr/bin/ffmpeg',
+        '/usr/local/bin/ffmpeg',
+        '/app/.apt/usr/bin/ffmpeg'  
+    ]
+    
+    for path in heroku_paths:
+        if os.path.exists(path):
+            return path
     
     windows_paths = [
         r'D:\ffmpeg\bin\ffmpeg.exe',  
@@ -21,30 +32,23 @@ def get_ffmpeg_path():
         if os.path.exists(path):
             return path
         
-    linux_paths = [
-        '/usr/bin/ffmpeg',
-        '/usr/local/bin/ffmpeg',
-        '/opt/ffmpeg/bin/ffmpeg'
-    ]
-    
-    for path in linux_paths:
-        if os.path.exists(path):
-            return path
-    
-    return 'ffmpeg'  
+    return 'ffmpeg'   
 
 
 def download_pinterest_video(url: str, output_path: str = None) -> str | None:
     if not output_path:
         output_path = f"pinterest_{uuid.uuid4().hex}.mp4"  
 
+    ffmpeg_path = get_ffmpeg_path()
+    
     ydl_opts = {
         'outtmpl': output_path,
         'quiet': True,
         'no_warnings': True,
         'noplaylist': True,
-        'format': 'bestvideo+bestaudio/best',  
+        'format': 'best[ext=mp4]/best',
         'merge_output_format': 'mp4',
+        'ffmpeg_location': ffmpeg_path,
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',
@@ -62,7 +66,28 @@ def download_pinterest_video(url: str, output_path: str = None) -> str | None:
                 return final_filename
 
     except Exception as e:
-        print(f"Ошибка при загрузке: {e}")
+        print(f"Ошибка при загрузке с объединением: {e}")
+        try:
+            simple_opts = {
+                'outtmpl': output_path,
+                'quiet': True,
+                'no_warnings': True,
+                'noplaylist': True,
+                'format': 'best',
+                'ffmpeg_location': ffmpeg_path,
+            }
+            
+            with yt_dlp.YoutubeDL(simple_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                ydl.download([url])
+                final_filename = ydl.prepare_filename(info)
+                
+                if os.path.exists(final_filename):
+                    print(f"Видео сохранено (простой формат): {final_filename}")
+                    return final_filename
+                    
+        except Exception as e2:
+            print(f"Ошибка при загрузке простым форматом: {e2}")
 
     return None
 
