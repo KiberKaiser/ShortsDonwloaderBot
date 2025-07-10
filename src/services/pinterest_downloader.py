@@ -4,12 +4,10 @@ import os
 import subprocess
 import shutil
 
-
 def get_ffmpeg_path():
     if shutil.which('ffmpeg'):
         return shutil.which('ffmpeg')
     
-   
     heroku_paths = [
         '/usr/bin/ffmpeg',
         '/usr/local/bin/ffmpeg',
@@ -31,9 +29,7 @@ def get_ffmpeg_path():
     for path in windows_paths:
         if os.path.exists(path):
             return path
-        
     return 'ffmpeg'   
-
 
 def download_pinterest_video(url: str, output_path: str = None) -> str | None:
     if not output_path:
@@ -41,67 +37,62 @@ def download_pinterest_video(url: str, output_path: str = None) -> str | None:
 
     ffmpeg_path = get_ffmpeg_path()
     
-    ydl_opts = {
-        'outtmpl': output_path,
-        'quiet': True,
-        'no_warnings': True,
-        'noplaylist': True,
-        'format': 'best[ext=mp4]/best',
-        'merge_output_format': 'mp4',
-        'ffmpeg_location': ffmpeg_path,
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4',
-        }]
-    }
-
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True}) as ydl:
             info = ydl.extract_info(url, download=False)
-            ydl.download([url])
-            final_filename = ydl.prepare_filename(info).rsplit('.', 1)[0] + ".mp4"
-            
-            if os.path.exists(final_filename):
-                print(f"Видео с аудио сохранено: {final_filename}")
-                return final_filename
-
+            print(f"Доступные форматы для {url}:")
+            for fmt in info.get('formats', []):
+                print(f"  {fmt.get('format_id')}: {fmt.get('ext')} - {fmt.get('resolution', 'audio')} - {fmt.get('format_note', '')}")
     except Exception as e:
-        print(f"Ошибка при загрузке с объединением: {e}")
+        print(f"Не удалось получить форматы: {e}")
+    
+    format_strategies = [
+        'best',  
+        'worst',  
+        'best[height<=720]', 
+        'best[height<=480]',
+        'mp4',
+        'best[ext=mp4]',
+        'bestvideo',
+        'best[vcodec!=none]'
+    ]
+    
+    for strategy in format_strategies:
         try:
-            simple_opts = {
+            ydl_opts = {
                 'outtmpl': output_path,
                 'quiet': True,
                 'no_warnings': True,
                 'noplaylist': True,
-                'format': 'best',
+                'format': strategy,
                 'ffmpeg_location': ffmpeg_path,
             }
             
-            with yt_dlp.YoutubeDL(simple_opts) as ydl:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 ydl.download([url])
                 final_filename = ydl.prepare_filename(info)
                 
                 if os.path.exists(final_filename):
-                    print(f"Видео сохранено (простой формат): {final_filename}")
+                    print(f"Видео сохранено с форматом '{strategy}': {final_filename}")
                     return final_filename
                     
-        except Exception as e2:
-            print(f"Ошибка при загрузке простым форматом: {e2}")
+        except Exception as e:
+            print(f"Формат '{strategy}' не сработал: {e}")
+            continue
 
+    
+    print("Все форматы не сработали для Pinterest")
     return None
-
 
 def download_pinterest_audio(url: str) -> str | None:
     output_path = f"pinterest_audio_{uuid.uuid4().hex}.%(ext)s"
     
     formats = [
-        'bestaudio[ext=m4a]',
-        'bestaudio[ext=mp3]',
         'bestaudio',
-        'best[ext=m4a]',
         'best[acodec!=none]', 
-        'best'
+        'best',
+        'worst'  
     ]
     
     for fmt in formats:
@@ -120,14 +111,14 @@ def download_pinterest_audio(url: str) -> str | None:
                 ydl.download([url])
                 
                 if os.path.exists(final_filename):
+                    print(f"Аудио сохранено с форматом '{fmt}': {final_filename}")
                     return final_filename
                     
         except Exception as e:
             print(f"Аудио формат {fmt} не сработал: {e}")
             continue
-    
+    print("Не удалось скачать аудио ни в одном формате")
     return None
-
 
 def merge_audio_video(video_path: str, audio_path: str, output_path: str = None) -> str | None:
 
@@ -178,12 +169,9 @@ def merge_audio_video(video_path: str, audio_path: str, output_path: str = None)
     
     return None
 
-
 def download_pinterest_separate_and_merge(url: str, output_path: str = None) -> str | None:
-
     if not output_path:
         output_path = f"pinterest_final_{uuid.uuid4().hex}.mp4"
-    
 
     video_path = download_pinterest_video_only(url)
     if not video_path:
@@ -199,31 +187,39 @@ def download_pinterest_separate_and_merge(url: str, output_path: str = None) -> 
     
     return merge_audio_video(video_path, audio_path, output_path)
 
-
 def download_pinterest_video_only(url: str, output_path: str = None) -> str | None:
- 
     if not output_path:
         output_path = f"pinterest_video_{uuid.uuid4().hex}.%(ext)s"
 
-    ydl_opts = {
-        'outtmpl': output_path,
-        'quiet': True,
-        'no_warnings': True,
-        'noplaylist': True,
-        'format': 'bestvideo[ext=mp4]',  
-    }
+    video_formats = [
+        'bestvideo',
+        'best[vcodec!=none]',
+        'best',
+        'worst'
+    ]
+    
+    for fmt in video_formats:
+        ydl_opts = {
+            'outtmpl': output_path,
+            'quiet': True,
+            'no_warnings': True,
+            'noplaylist': True,
+            'format': fmt,  
+        }
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            final_filename = ydl.prepare_filename(info)
-            ydl.download([url])
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                final_filename = ydl.prepare_filename(info)
+                ydl.download([url])
+                
+                if os.path.exists(final_filename):
+                    print(f"Видео без аудио сохранено с форматом '{fmt}': {final_filename}")
+                    return final_filename
+
+        except Exception as e:
+            print(f"Формат видео '{fmt}' не сработал: {e}")
+            continue
             
-            if os.path.exists(final_filename):
-                print(f"Видео без аудио сохранено: {final_filename}")
-                return final_filename
-
-    except Exception as e:
-        print(f"Ошибка при загрузке видео: {e}")
-
+    print("Не удалось скачать видео ни в одном формате")
     return None
