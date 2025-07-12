@@ -8,7 +8,8 @@ def validate_youtube_shorts_url(url: str) -> bool:
     return (
         url.startswith("https://youtube.com/shorts/") or
         url.startswith("https://www.youtube.com/shorts/") or
-        url.startswith("https://m.youtube.com/shorts/")
+        url.startswith("https://m.youtube.com/shorts/") or
+        url.startswith("https://youtu.be/") and "shorts" in url
     )
 
 async def handle_youtube_shorts_download(message: types.Message):
